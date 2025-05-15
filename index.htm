@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HD Wallpapers</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .modal-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+        .modal-slide-out {
+            animation: slideOut 0.3s ease-in;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.9); }
+        }
+        .image-container {
+            width: 95%;
+            max-width: 1200px;
+            height: 90vh;
+            max-height: 800px;
+            margin: auto;
+            position: relative;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+        }
+        @media (max-width: 640px) {
+            .image-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+                max-height: none;
+            }
+            #categoryChips {
+                padding: 0.5rem;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            #categoryChips::-webkit-scrollbar {
+                display: none;
+            }
+            .category-chip {
+                flex-shrink: 0;
+            }
+        }
+        @media (max-width: 480px) {
+            .modal-controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .modal-controls button {
+                width: 100%;
+            }
+        }
+        #scrollToTop {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease-in-out;
+            transform: translateY(20px);
+        }
+        #scrollToTop.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .bounce-animation {
+            animation: bounce 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-6 sm:mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">HD Wallpapers</h1>
+        
+        <!-- Search Bar -->
+        <div class="flex justify-center mb-6">
+            <div class="w-full max-w-2xl bg-gray-800 rounded-lg backdrop-blur-md bg-opacity-80">
+                <div class="relative flex items-center">
+                    <i class="fas fa-search absolute left-4 text-gray-500"></i>
+                    <input type="text" id="searchInput" placeholder="Search wallpapers..." 
+                           class="w-full bg-transparent border border-gray-700 rounded-l-lg p-3 pl-12 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500">
+                    <button id="searchButton" class="bg-purple-500 hover:bg-purple-600 text-white px-4 sm:px-6 py-3 rounded-r-lg transition-colors duration-300 flex items-center whitespace-nowrap">
+                        <i class="fas fa-search sm:mr-2"></i>
+                        <span class="hidden sm:inline">Search</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Chips -->
+        <div class="flex justify-start sm:justify-center gap-2 mb-6 sm:mb-8 px-4 -mx-4 sm:mx-0" id="categoryChips">
+            <button class="category-chip active bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="all">All</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="nature">Nature</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="abstract">Abstract</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="minimal">Minimal</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="dark">Dark</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="space">Space</button>
+            <button class="category-chip bg-gray-800 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-all duration-300 text-sm sm:text-base" data-category="landscape">Landscape</button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
+            <div class="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-t-2 border-b-2 border-purple-500"></div>
+        </div>
+
+        <!-- Image Grid -->
+        <div id="wallpapers" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"></div>
+
+        <!-- Pagination -->
+        <div class="flex flex-wrap justify-center items-center gap-2 mt-6 sm:mt-8 px-4" id="pagination">
+            <button id="prevPage" class="bg-gray-800 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base">
+                <i class="fas fa-chevron-left mr-1 sm:mr-2"></i>Previous
+            </button>
+            <div id="pageNumbers" class="flex flex-wrap justify-center gap-1 sm:gap-2"></div>
+            <button id="nextPage" class="bg-gray-800 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base">
+                Next<i class="fas fa-chevron-right ml-1 sm:ml-2"></i>
+            </button>
+        </div>
+
+        <!-- Modal -->
+        <div id="imageModal" class="hidden fixed inset-0 z-50">
+            <!-- Blur Background -->
+            <div class="absolute inset-0 backdrop-blur-xl bg-black bg-opacity-75"></div>
+            
+            <!-- Centered Container -->
+            <div class="fixed inset-0 flex items-center justify-center p-2 sm:p-4">
+                <div class="image-container">
+                    <!-- Navigation Buttons -->
+                    <button id="prevImage" class="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 text-white text-2xl sm:text-4xl opacity-75 hover:opacity-100 transition-opacity duration-300 z-50 bg-black bg-opacity-50 rounded-full p-2 sm:p-3 hover:bg-opacity-75">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button id="nextImage" class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-white text-2xl sm:text-4xl opacity-75 hover:opacity-100 transition-opacity duration-300 z-50 bg-black bg-opacity-50 rounded-full p-2 sm:p-3 hover:bg-opacity-75">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+
+                    <!-- Close and Download Buttons -->
+                    <div class="absolute top-2 sm:top-4 right-2 sm:right-4 flex flex-col sm:flex-row gap-2 sm:gap-3 z-50 modal-controls">
+                        <button id="downloadImage" class="bg-purple-500 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-purple-600 transition-colors duration-300 flex items-center justify-center text-sm sm:text-base">
+                            <i class="fas fa-download mr-2"></i>Download
+                        </button>
+                        <button id="closeModal" class="bg-gray-800 text-white p-2 rounded-lg hover:bg-gray-700 transition-colors duration-300 flex items-center justify-center">
+                            <i class="fas fa-times text-lg sm:text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Image -->
+                    <div class="h-full w-full flex items-center justify-center">
+                        <img id="modalImage" src="" alt="" class="max-h-full max-w-full object-contain modal-slide-in p-2 sm:p-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scrollToTop" class="fixed bottom-4 right-4 bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-40">
+        <i class="fas fa-arrow-up text-lg bounce-animation"></i>
+    </button>
+
+    <script src="script.js"></script>
+    <script>
+        // Scroll to Top functionality
+        const scrollToTopBtn = document.getElementById('scrollToTop');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                scrollToTopBtn.classList.add('visible');
+            } else {
+                scrollToTopBtn.classList.remove('visible');
+            }
+        });
+
+        scrollToTopBtn.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+    </script>
+</body>
+</html>
